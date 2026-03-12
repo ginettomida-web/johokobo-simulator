@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pricingData = {
         "スインクホール": {
             baseAm: 12030, basePm: 16050, baseNight: 17550, baseAllday: 38790,
+            alldayAm: 10220, alldayPm: 13640, alldayNight: 14930,
             extHour: 5030,
             hasHvac: true, coolerRate: 1900, heaterRate: 2540,
             specificEq: [
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         "セミナー室": {
             baseAm: 4310, basePm: 5750, baseNight: 6290, baseAllday: 13910,
+            alldayAm: 3660, alldayPm: 4890, alldayNight: 5360,
             extHour: 1800,
             hasHvac: true, coolerRate: 600, heaterRate: 810,
             specificEq: [
@@ -27,37 +29,43 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         },
         "研修室": {
-            baseAm: 1730, basePm: 2300, baseNight: 2520, baseAllday: 5600, 
+            baseAm: 1730, basePm: 2300, baseNight: 2520, baseAllday: 5560, 
+            alldayAm: 1470, alldayPm: 1950, alldayNight: 2140,
             extHour: 720,
             hasHvac: false,
             specificEq: []
         },
         "多目的研修室": {
             baseAm: 4120, basePm: 5510, baseNight: 6020, baseAllday: 13320,
+            alldayAm: 3510, alldayPm: 4680, alldayNight: 5130,
             extHour: 1720,
             hasHvac: false,
             specificEq: []
         },
         "会議室１": {
             baseAm: 850, basePm: 1150, baseNight: 1250, baseAllday: 2780,
+            alldayAm: 730, alldayPm: 980, alldayNight: 1070,
             extHour: 350,
             hasHvac: false,
             specificEq: []
         },
         "会議室２": {
             baseAm: 850, basePm: 1150, baseNight: 1250, baseAllday: 2780,
+            alldayAm: 730, alldayPm: 980, alldayNight: 1070,
             extHour: 350,
             hasHvac: false,
             specificEq: []
         },
         "会議室３": {
             baseAm: 2490, basePm: 3320, baseNight: 3630, baseAllday: 8040,
+            alldayAm: 2120, alldayPm: 2820, alldayNight: 3100,
             extHour: 1030,
             hasHvac: false,
             specificEq: []
         },
         "会議室４": {
             baseAm: 3800, basePm: 5070, baseNight: 5540, baseAllday: 12250,
+            alldayAm: 3230, alldayPm: 4310, alldayNight: 4710,
             extHour: 1590,
             hasHvac: false,
             specificEq: []
@@ -95,11 +103,53 @@ document.addEventListener('DOMContentLoaded', () => {
             timeSegments: data.isHourly ? [] : ["am"],
             extHours: { "早朝延長": 0, "昼間延長": 0, "夕方延長": 0 },
             creationHours: { adult: 0, child: 0 },
-            admissionMults: { am: 1.0, pm: 1.0, night: 1.0 },
+            admissionMult: 1.0,
             hvac: { cooler: 0, heater: 0 },
             equipment: {}, // { name_segment: qty }
-            overrides: {}  // { fieldName: value }
+            overrides: {},  // { fieldName: value }
+            performanceTime: { start: "09:00", end: "21:30" }
         };
+    }
+
+    const timeRanges = {
+        "早朝延長": { start: "08:30", end: "09:00" },
+        "am": { start: "09:00", end: "12:00" },
+        "昼間延長": { start: "12:00", end: "13:00" },
+        "pm": { start: "13:00", end: "17:00" },
+        "夕方延長": { start: "17:00", end: "18:00" },
+        "night": { start: "18:00", end: "21:30" },
+        "allday": { start: "09:00", end: "21:30" }
+    };
+
+    function timeToMinutes(timeStr) {
+        if (!timeStr) return 0;
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    }
+
+    function generateTimeOptions(selectedTime) {
+        let options = '';
+        for (let h = 8; h <= 21; h++) {
+            for (let m = 0; m <= 30; m += 30) {
+                if (h === 8 && m === 0) continue; // Start from 08:30
+                if (h === 21 && m === 30) {
+                    const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    options += `<option value="${time}" ${selectedTime === time ? 'selected' : ''}>${time}</option>`;
+                    break;
+                }
+                const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                options += `<option value="${time}" ${selectedTime === time ? 'selected' : ''}>${time}</option>`;
+            }
+        }
+        return options;
+    }
+
+    function isOverlap(range1, range2) {
+        const start1 = timeToMinutes(range1.start);
+        const end1 = timeToMinutes(range1.end);
+        const start2 = timeToMinutes(range2.start);
+        const end2 = timeToMinutes(range2.end);
+        return start1 < end2 && start2 < end1;
     }
     
     function getPrice(roomName, fieldName, defaultValue) {
@@ -204,6 +254,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         </button>
                     </div>
 
+                    <div class="mb-10 p-5 bg-primary/5 rounded-2xl border border-primary/10 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+                        <h3 class="flex items-center gap-2 text-sm font-bold text-primary mb-4">
+                            <span class="material-symbols-outlined text-lg">schedule</span>
+                            本番時間の設定
+                        </h3>
+                        <p class="text-[10px] text-slate-500 mb-4 leading-relaxed">
+                            ※本番時間と重なる区分・延長時間にのみ「入場料等による割増」が適用されます。
+                        </p>
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1">
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1.5 uppercase tracking-wider">Start / 開始</label>
+                                <select class="performance-time-select w-full rounded-xl border-slate-200 bg-white dark:bg-slate-900 text-sm font-medium focus:ring-primary focus:border-primary transition-all" data-room="${activeRoom}" data-type="start">
+                                    ${generateTimeOptions(currentConfig.performanceTime.start)}
+                                </select>
+                            </div>
+                            <div class="text-slate-300 mt-5 font-light">～</div>
+                            <div class="flex-1">
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1.5 uppercase tracking-wider">End / 終了</label>
+                                <select class="performance-time-select w-full rounded-xl border-slate-200 bg-white dark:bg-slate-900 text-sm font-medium focus:ring-primary focus:border-primary transition-all" data-room="${activeRoom}" data-type="end">
+                                    ${generateTimeOptions(currentConfig.performanceTime.end)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="section-time-${activeRoom}" class="mb-10">
                         <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">1. 利用時間の指定</h3>
                         ${currentData.isHourly ? renderHourlyTimeUI(activeRoom, currentConfig) : renderNormalTimeUI(activeRoom, currentConfig)}
@@ -223,13 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     ` : ''}
 
-                    <div class="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800">
-                        <h3 class="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">
-                            <span class="material-symbols-outlined text-base">settings_suggest</span>
-                            単価の調整（管理者・特別設定用）
-                        </h3>
-                        ${renderPriceAdjustmentUI(activeRoom, currentConfig, currentData)}
+                    <div class="mb-10">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">${currentData.hasHvac ? '4' : '3'}. 附属設備・備品の選択</h3>
+                        ${renderEquipmentUI(activeRoom, currentConfig, currentData)}
                     </div>
+
                 </div>
             </div>
         `;
@@ -344,26 +417,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderAdmissionUI(roomName, config) {
-        const segments = [
-            { id: 'am', label: '午前', color: 'bg-blue-500' },
-            { id: 'pm', label: '午後', color: 'bg-emerald-500' },
-            { id: 'night', label: '夜間', color: 'bg-purple-500' }
+        const options = [
+            { val: 1.0, label: 'なし (1.0倍)' },
+            { val: 1.3, label: '1,000円未満 (1.3倍)' },
+            { val: 1.5, label: '1,000-3,000円 (1.5倍)' },
+            { val: 2.0, label: '3,000円以上 (2.0倍)' }
         ];
+
         return `
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                ${segments.map(seg => `
-                    <div class="p-3 rounded-xl border ${config.admissionMults[seg.id] > 1.0 ? 'border-primary bg-primary/5' : 'border-slate-100 dark:border-slate-800'}">
-                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
-                            <div class="w-1.5 h-1.5 rounded-full ${seg.color}"></div>${seg.label}
-                        </label>
-                        <select class="room-admission-select w-full rounded-lg border-slate-200 bg-white text-xs" data-room="${roomName}" data-seg="${seg.id}">
-                            <option value="1.0" ${config.admissionMults[seg.id] == 1.0 ? 'selected' : ''}>なし</option>
-                            <option value="1.3" ${config.admissionMults[seg.id] == 1.3 ? 'selected' : ''}>1,000円未満</option>
-                            <option value="1.5" ${config.admissionMults[seg.id] == 1.5 ? 'selected' : ''}>1,000-3,000円</option>
-                            <option value="2.0" ${config.admissionMults[seg.id] == 2.0 ? 'selected' : ''}>3,000円以上</option>
-                        </select>
-                    </div>
-                `).join('')}
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-bold text-slate-500 mb-1">入場料等の徴収に伴う割増倍率</label>
+                <select class="room-admission-select w-full rounded-xl border-slate-200 bg-white dark:bg-slate-900 text-sm font-medium focus:ring-primary focus:border-primary transition-all" data-room="${roomName}">
+                    ${options.map(opt => `
+                        <option value="${opt.val}" ${Math.abs(config.admissionMult - opt.val) < 0.01 ? 'selected' : ''}>${opt.label}</option>
+                    `).join('')}
+                </select>
+                <p class="text-[10px] text-slate-400 mt-1">※設定された「本番時間」と重なる区分・延長にこの倍率が適用されます。</p>
             </div>
         `;
     }
@@ -403,8 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <table class="w-full text-left text-sm">
                     <thead>
                         <tr class="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase text-slate-400">
-                            <th class="pb-2">設備名</th>
-                            <th class="pb-2 text-right">単価調整</th>
+                            <th class="pb-2">設備名（単価）</th>
                             <th class="pb-2 text-center">午前</th>
                             <th class="pb-2 text-center">午後</th>
                             <th class="pb-2 text-center">夜間</th>
@@ -412,15 +480,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </thead>
                     <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
                         ${eqs.map(eq => {
-                            const currentPrice = getPrice(roomName, `eq_${eq.name}`, eq.price);
                             return `
                             <tr>
-                                <td class="py-2 pr-2 font-medium">${eq.name} <span class="text-[10px] text-slate-400">(最大${eq.max})</span></td>
-                                <td class="py-2 px-1 text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <span class="text-[10px] text-slate-400">¥</span>
-                                        <input type="number" class="room-price-override w-16 px-1 rounded border-slate-200 text-right text-xs" 
-                                               value="${currentPrice}" data-room="${roomName}" data-field="eq_${eq.name}" />
+                                <td class="py-2 pr-2 font-medium">
+                                    <div class="flex flex-col">
+                                        <span>${eq.name} <span class="text-[10px] text-slate-400">(最大${eq.max})</span></span>
+                                        <span class="text-[11px] text-primary font-bold">¥${eq.price.toLocaleString()}</span>
                                     </div>
                                 </td>
                                 ${['午前', '午後', '夜間'].map(seg => `
@@ -430,7 +495,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </td>
                                 `).join('')}
                             </tr>
-                        `}).join('')}
+                        `;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -469,8 +535,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="number" class="room-price-override rounded-lg border-slate-200 text-sm" value="${getPrice(roomName, 'baseNight', data.baseNight)}" data-room="${roomName}" data-field="baseNight" />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label class="text-xs font-medium text-slate-500">全日 基本料金</label>
-                        <input type="number" class="room-price-override rounded-lg border-slate-200 text-sm" value="${getPrice(roomName, 'baseAllday', data.baseAllday)}" data-room="${roomName}" data-field="baseAllday" />
+                        <label class="text-xs font-medium text-slate-500">全日 基本料金 (合計)</label>
+                        <input type="number" class="room-price-override rounded-lg border-slate-200 text-sm font-bold bg-slate-50" value="${getPrice(roomName, 'baseAllday', data.baseAllday)}" data-room="${roomName}" data-field="baseAllday" />
+                    </div>
+                </div>
+
+                <div class="p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                    <p class="text-[10px] font-bold text-blue-600 mb-3 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">info</span>
+                        全日利用時の区分別単価（割増計算用）
+                    </p>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-medium text-slate-400">全日-午前</label>
+                            <input type="number" class="room-price-override rounded border-slate-200 text-xs" value="${getPrice(roomName, 'alldayAm', data.alldayAm)}" data-room="${roomName}" data-field="alldayAm" />
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-medium text-slate-400">全日-午後</label>
+                            <input type="number" class="room-price-override rounded border-slate-200 text-xs" value="${getPrice(roomName, 'alldayPm', data.alldayPm)}" data-room="${roomName}" data-field="alldayPm" />
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-medium text-slate-400">全日-夜間</label>
+                            <input type="number" class="room-price-override rounded border-slate-200 text-xs" value="${getPrice(roomName, 'alldayNight', data.alldayNight)}" data-room="${roomName}" data-field="alldayNight" />
+                        </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -572,8 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.room-admission-select').forEach(sel => {
             sel.addEventListener('change', () => {
                 const room = sel.getAttribute('data-room');
-                const seg = sel.getAttribute('data-seg');
-                roomConfigs[room].admissionMults[seg] = parseFloat(sel.value);
+                roomConfigs[room].admissionMult = parseFloat(sel.value);
                 renderRoomConfigs();
                 calculateTotal();
             });
@@ -615,6 +701,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 calculateTotal();
             });
         });
+
+        document.querySelectorAll('.performance-time-select').forEach(sel => {
+            sel.addEventListener('change', () => {
+                const room = sel.getAttribute('data-room');
+                const type = sel.getAttribute('data-type');
+                roomConfigs[room].performanceTime[type] = sel.value;
+                calculateTotal();
+            });
+        });
     }
 
     function calculateTotal() {
@@ -645,69 +740,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hasNight = config.timeSegments.includes('night');
                 const isEffectiveAllday = config.timeSegments.includes('allday') || (hasAm && hasPm && hasNight);
 
-                const baseAm = getPrice(roomName, 'baseAm', data.baseAm);
-                const basePm = getPrice(roomName, 'basePm', data.basePm);
-                const baseNight = getPrice(roomName, 'baseNight', data.baseNight);
-                const baseAllday = getPrice(roomName, 'baseAllday', data.baseAllday);
+                // Determine unit prices based on mode
+                const bAm = getPrice(roomName, isEffectiveAllday ? 'alldayAm' : 'baseAm', isEffectiveAllday ? data.alldayAm : data.baseAm);
+                const bPm = getPrice(roomName, isEffectiveAllday ? 'alldayPm' : 'basePm', isEffectiveAllday ? data.alldayPm : data.basePm);
+                const bNight = getPrice(roomName, isEffectiveAllday ? 'alldayNight' : 'baseNight', isEffectiveAllday ? data.alldayNight : data.baseNight);
+                const bAllday = getPrice(roomName, 'baseAllday', data.baseAllday);
+                const extHourUnitPrice = getPrice(roomName, 'extHour', data.extHour);
 
+                // Performance time range
+                const perfRange = config.performanceTime;
+
+                // 1. Base Segments Calculation with Overlap Surcharge
+                const mult = config.admissionMult;
                 if (isEffectiveAllday) {
-                    baseTotal = baseAllday;
+                    // All-day mode: Check each segment for overlap with Performance Time
+                    const finalAm = isOverlap(perfRange, timeRanges["am"]) ? Math.round(bAm * mult) : bAm;
+                    const finalPm = isOverlap(perfRange, timeRanges["pm"]) ? Math.round(bPm * mult) : bPm;
+                    const finalNight = isOverlap(perfRange, timeRanges["night"]) ? Math.round(bNight * mult) : bNight;
+
+                    baseTotal = finalAm + finalPm + finalNight;
+
+                    if (finalAm > bAm) roomSubDetails.push(`午前割増(全日): ¥${(finalAm - bAm).toLocaleString()}`);
+                    if (finalPm > bPm) roomSubDetails.push(`午後割増(全日): ¥${(finalPm - bPm).toLocaleString()}`);
+                    if (finalNight > bNight) roomSubDetails.push(`夜間割増(全日): ¥${(finalNight - bNight).toLocaleString()}`);
                 } else {
-                    if (hasAm) { baseTotal += baseAm; segTotals.am = baseAm; }
-                    if (hasPm) { baseTotal += basePm; segTotals.pm = basePm; }
-                    if (hasNight) { baseTotal += baseNight; segTotals.night = baseNight; }
+                    if (hasAm) {
+                        const fee = bAm;
+                        const finalFee = isOverlap(perfRange, timeRanges["am"]) ? Math.round(fee * mult) : fee;
+                        baseTotal += finalFee;
+                        if (finalFee > fee) roomSubDetails.push(`午前割増: ¥${(finalFee - fee).toLocaleString()}`);
+                    }
+                    if (hasPm) {
+                        const fee = bPm;
+                        const finalFee = isOverlap(perfRange, timeRanges["pm"]) ? Math.round(fee * mult) : fee;
+                        baseTotal += finalFee;
+                        if (finalFee > fee) roomSubDetails.push(`午後割増: ¥${(finalFee - fee).toLocaleString()}`);
+                    }
+                    if (hasNight) {
+                        const fee = bNight;
+                        const finalFee = isOverlap(perfRange, timeRanges["night"]) ? Math.round(fee * mult) : fee;
+                        baseTotal += finalFee;
+                        if (finalFee > fee) roomSubDetails.push(`夜間割増: ¥${(finalFee - fee).toLocaleString()}`);
+                    }
                 }
-                // Extensions
-                let extH = 0;
-                let extDetails = [];
-                const segs = config.timeSegments;
+
+                // 2. Extensions Calculation with Overlap Surcharge
+                let extTotal = 0;
                 const isAmPm = (hasAm && hasPm) || isEffectiveAllday;
                 const isPmNight = (hasPm && hasNight) || isEffectiveAllday;
 
-                const extHourUnitPrice = getPrice(roomName, 'extHour', data.extHour);
                 for (let key in config.extHours) {
                     const h = config.extHours[key];
                     if (h > 0) {
-                        // Skip midday/evening if consecutive
+                        // Consecutivity Skip Logic
                         if (key === "昼間延長" && isAmPm) continue;
                         if (key === "夕方延長" && isPmNight) continue;
 
-                        // Contiguity checks for logic safety
+                        // Availability Check (Contiguity)
                         if (key === "早朝延長" && !hasAm && !isEffectiveAllday) continue;
                         if (key === "昼間延長" && !hasAm && !hasPm && !isEffectiveAllday) continue;
                         if (key === "夕方延長" && !hasPm && !hasNight && !isEffectiveAllday) continue;
 
-                        extH += h;
-                        const fee = extHourUnitPrice * h;
-                        extDetails.push({ name: key, fee: fee });
+                        const rawFee = extHourUnitPrice * h;
+                        let finalFee = rawFee;
 
-                        if (key.includes('早朝')) segTotals.am += fee;
-                        if (key.includes('昼間')) segTotals.pm += fee;
-                        if (key.includes('夕方')) segTotals.night += fee;
+                        // Surcharge Check for Extensions
+                        // Exception: No surcharge for midday/evening extensions in All-day mode
+                        const isNoSurchargeExt = isEffectiveAllday && (key === "昼間延長" || key === "夕方延長");
+                        
+                        if (!isNoSurchargeExt && isOverlap(perfRange, timeRanges[key])) {
+                            finalFee = Math.round(rawFee * mult);
+                            if (finalFee > rawFee) roomSubDetails.push(`${key}割増: ¥${(finalFee - rawFee).toLocaleString()}`);
+                        }
+
+                        extTotal += finalFee;
+                        roomSubDetails.push(`${key} ${h}h: ¥${finalFee.toLocaleString()}`);
                     }
                 }
-                const extTotal = extH * extHourUnitPrice;
-                const basePlusExt = baseTotal + extTotal;
 
-                if (roomName === '創作コーナー') {
-                    roomTotal = baseTotal + extTotal;
-                } else if (isEffectiveAllday) {
-                    const mult = config.admissionMults.am;
-                    roomTotal = Math.round(basePlusExt * mult);
-                    if (mult > 1.0) roomSubDetails.push(`割増(全日): ¥${(roomTotal - basePlusExt).toLocaleString()}`);
-                } else {
-                    const amF = Math.round(segTotals.am * config.admissionMults.am);
-                    const pmF = Math.round(segTotals.pm * config.admissionMults.pm);
-                    const nightF = Math.round(segTotals.night * config.admissionMults.night);
-                    roomTotal = amF + pmF + nightF;
-                    if (config.admissionMults.am > 1.0 && segTotals.am > 0) roomSubDetails.push(`午前割増: ¥${(amF - segTotals.am).toLocaleString()}`);
-                    if (config.admissionMults.pm > 1.0 && segTotals.pm > 0) roomSubDetails.push(`午後割増: ¥${(pmF - segTotals.pm).toLocaleString()}`);
-                    if (config.admissionMults.night > 1.0 && segTotals.night > 0) roomSubDetails.push(`夜間割増: ¥${(nightF - segTotals.night).toLocaleString()}`);
-                }
-                if (roomTotal > 0) roomSubDetails.unshift(`基本+延長: ¥${basePlusExt.toLocaleString()}`);
-                extDetails.forEach(ed => {
-                    roomSubDetails.push(`${ed.name}: ¥${ed.fee.toLocaleString()}`);
-                });
+                roomTotal = baseTotal + extTotal;
+                if (roomTotal > 0) roomSubDetails.unshift(`基本+延長: ¥${roomTotal.toLocaleString()}`);
             }
 
             if (data.hasHvac) {
