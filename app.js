@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     ${currentData.hasHvac ? `
                     <div class="mb-10">
-                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">3. 冷暖房費の指定</h3>
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">3. 冷暖房の使用時間の指定</h3>
                         ${renderHvacUI(activeRoom, currentConfig, currentData)}
                     </div>
                     ` : ''}
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <select class="room-admission-select w-full rounded-lg border-slate-200 bg-white text-xs" data-room="${roomName}" data-seg="${seg.id}">
                             <option value="1.0" ${config.admissionMults[seg.id] == 1.0 ? 'selected' : ''}>なし</option>
                             <option value="1.3" ${config.admissionMults[seg.id] == 1.3 ? 'selected' : ''}>1,000円未満</option>
-                            <option value="1.5" ${config.admissionMults[seg.id] == 1.5 ? 'selected' : ''}>1,000円～3,000円未満</option>
+                            <option value="1.5" ${config.admissionMults[seg.id] == 1.5 ? 'selected' : ''}>1,000-3,000円</option>
                             <option value="2.0" ${config.admissionMults[seg.id] == 2.0 ? 'selected' : ''}>3,000円以上</option>
                         </select>
                     </div>
@@ -547,23 +547,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (aH > 0) roomSubDetails.push(`一般 ${aH}h (¥${aT.toLocaleString()})`);
                 if (cH > 0) roomSubDetails.push(`小中学生 ${cH}h (¥${cT.toLocaleString()})`);
             } else {
-                let baseTotal = 0;
-                let segTotals = { am: 0, pm: 0, night: 0 };
-                let isAllday = config.timeSegments.includes('allday');
+                const hasAm = config.timeSegments.includes('am');
+                const hasPm = config.timeSegments.includes('pm');
+                const hasNight = config.timeSegments.includes('night');
+                const isEffectiveAllday = config.timeSegments.includes('allday') || (hasAm && hasPm && hasNight);
 
-                if (isAllday) {
+                if (isEffectiveAllday) {
                     baseTotal = data.baseAllday;
                 } else {
-                    if (config.timeSegments.includes('am')) { baseTotal += data.baseAm; segTotals.am = data.baseAm; }
-                    if (config.timeSegments.includes('pm')) { baseTotal += data.basePm; segTotals.pm = data.basePm; }
-                    if (config.timeSegments.includes('night')) { baseTotal += data.baseNight; segTotals.night = data.baseNight; }
+                    if (hasAm) { baseTotal += data.baseAm; segTotals.am = data.baseAm; }
+                    if (hasPm) { baseTotal += data.basePm; segTotals.pm = data.basePm; }
+                    if (hasNight) { baseTotal += data.baseNight; segTotals.night = data.baseNight; }
                 }
                 // Extensions
                 let extH = 0;
                 let extDetails = [];
                 const segs = config.timeSegments;
-                const isAmPm = (segs.includes('am') && segs.includes('pm')) || segs.includes('allday');
-                const isPmNight = (segs.includes('pm') && segs.includes('night')) || segs.includes('allday');
+                const isAmPm = (hasAm && hasPm) || isEffectiveAllday;
+                const isPmNight = (hasPm && hasNight) || isEffectiveAllday;
 
                 for (let key in config.extHours) {
                     const h = config.extHours[key];
@@ -573,9 +574,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (key === "夕方延長" && isPmNight) continue;
 
                         // Contiguity checks for logic safety
-                        if (key === "早朝延長" && !segs.includes('am') && !segs.includes('allday')) continue;
-                        if (key === "昼間延長" && !segs.includes('am') && !segs.includes('pm') && !segs.includes('allday')) continue;
-                        if (key === "夕方延長" && !segs.includes('pm') && !segs.includes('night') && !segs.includes('allday')) continue;
+                        if (key === "早朝延長" && !hasAm && !isEffectiveAllday) continue;
+                        if (key === "昼間延長" && !hasAm && !hasPm && !isEffectiveAllday) continue;
+                        if (key === "夕方延長" && !hasPm && !hasNight && !isEffectiveAllday) continue;
 
                         extH += h;
                         const fee = data.extHour * h;
@@ -591,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (roomName === '創作コーナー') {
                     roomTotal = baseTotal + extTotal;
-                } else if (isAllday) {
+                } else if (isEffectiveAllday) {
                     const mult = config.admissionMults.am;
                     roomTotal = Math.round(basePlusExt * mult);
                     if (mult > 1.0) roomSubDetails.push(`割増(全日): ¥${(roomTotal - basePlusExt).toLocaleString()}`);
