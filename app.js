@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="flex flex-col gap-4">
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-bold text-slate-500 mb-1">最高額の入場料等 (円)</label>
+                    <label class="text-xs font-bold text-slate-500 mb-1">入場料等 (円)</label>
                     <div class="relative">
                         <input type="number" class="room-admission-fee-input w-full rounded-xl border-slate-200 bg-white dark:bg-slate-900 text-right pr-8 font-medium focus:ring-primary focus:border-primary transition-all" 
                             data-room="${roomName}" min="0" value="${config.admissionFee || 0}" />
