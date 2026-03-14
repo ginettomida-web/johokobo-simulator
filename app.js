@@ -315,6 +315,25 @@ document.addEventListener('DOMContentLoaded', () => {
         attachDynamicListeners();
     }
 
+    function renderStepper(id, value, min, max, dataAttrs = '') {
+        const isMax = max !== null && value >= max;
+        const isMin = value <= min;
+        return `
+            <div class="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shooter-stepper">
+                <button type="button" class="stepper-btn stepper-minus px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 flex items-center justify-center transition-colors" 
+                        ${isMin ? 'disabled' : ''} ${dataAttrs} data-action="minus">
+                    <span class="material-symbols-outlined text-base">remove</span>
+                </button>
+                <input type="number" id="${id}" class="stepper-input w-10 border-0 bg-transparent text-center text-sm font-bold focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                       value="${value}" min="${min}" ${max !== null ? `max="${max}"` : ''} ${dataAttrs} />
+                <button type="button" class="stepper-btn stepper-plus px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 disabled:opacity-30 flex items-center justify-center transition-colors" 
+                        ${isMax ? 'disabled' : ''} ${dataAttrs} data-action="plus">
+                    <span class="material-symbols-outlined text-base">add</span>
+                </button>
+            </div>
+        `;
+    }
+
     function renderNormalTimeUI(roomName, config) {
         const segments = [
             { id: 'am', label: '午前 (9:00 - 12:00)' },
@@ -399,19 +418,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderHourlyTimeUI(roomName, config) {
         return `
             <div class="space-y-6">
-                <p class="text-sm text-slate-600 dark:text-slate-400">利用する時間数を直接入力してください。</p>
+                <p class="text-sm text-slate-600 dark:text-slate-400">利用する時間数を入力してください。</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300">一般 (¥230/h)</label>
                         <div class="flex items-center gap-2">
-                            <input class="room-creation-input w-24 rounded-lg border-slate-200 text-right" type="number" min="0" value="${config.creationHours.adult}" data-room="${roomName}" data-type="adult" />
+                            ${renderStepper('', config.creationHours.adult, 0, null, `data-room="${roomName}" data-type="adult" class="room-creation-input"`)}
                             <span class="text-sm text-slate-500">時間</span>
                         </div>
                     </div>
                     <div class="space-y-2">
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300">小・中学生 (¥110/h)</label>
                         <div class="flex items-center gap-2">
-                            <input class="room-creation-input w-24 rounded-lg border-slate-200 text-right" type="number" min="0" value="${config.creationHours.child}" data-room="${roomName}" data-type="child" />
+                            ${renderStepper('', config.creationHours.child, 0, null, `data-room="${roomName}" data-type="child" class="room-creation-input"`)}
                             <span class="text-sm text-slate-500">時間</span>
                         </div>
                     </div>
@@ -465,12 +484,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="grid grid-cols-2 gap-4 text-sm">
                 <div class="space-y-2">
                     <label class="flex items-center gap-1 font-bold text-slate-700"><span class="material-symbols-outlined text-blue-500 text-sm">ac_unit</span>冷房(h)</label>
-                    <input class="room-hvac-input w-full rounded-lg border-slate-200 text-right" type="number" min="0" value="${config.hvac.cooler}" data-room="${roomName}" data-type="cooler" />
+                    <div class="flex items-center gap-2">
+                        ${renderStepper('', config.hvac.cooler, 0, null, `data-room="${roomName}" data-type="cooler" class="room-hvac-input"`)}
+                    </div>
                     <p class="text-[10px] text-slate-400">¥${data.coolerRate}/h</p>
                 </div>
                 <div class="space-y-2">
                     <label class="flex items-center gap-1 font-bold text-slate-700"><span class="material-symbols-outlined text-red-500 text-sm">heat_pump</span>暖房(h)</label>
-                    <input class="room-hvac-input w-full rounded-lg border-slate-200 text-right" type="number" min="0" value="${config.hvac.heater}" data-room="${roomName}" data-type="heater" />
+                    <div class="flex items-center gap-2">
+                        ${renderStepper('', config.hvac.heater, 0, null, `data-room="${roomName}" data-type="heater" class="room-hvac-input"`)}
+                    </div>
                     <p class="text-[10px] text-slate-400">¥${data.heaterRate}/h</p>
                 </div>
             </div>
@@ -491,37 +514,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         return `
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-100 dark:border-slate-800 text-[10px] uppercase text-slate-400">
-                            <th class="pb-2">設備名（単価）</th>
-                            <th class="pb-2 text-center">午前</th>
-                            <th class="pb-2 text-center">午後</th>
-                            <th class="pb-2 text-center">夜間</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
-                        ${eqs.map(eq => {
-                            return `
-                            <tr>
-                                <td class="py-2 pr-2 font-medium">
-                                    <div class="flex flex-col">
-                                        <span>${eq.name} <span class="text-[10px] text-slate-400">(最大${eq.max})</span></span>
-                                        <span class="text-[11px] text-primary font-bold">¥${eq.price.toLocaleString()}</span>
-                                    </div>
-                                </td>
-                                ${['午前', '午後', '夜間'].map(seg => `
-                                    <td class="py-2 px-1 text-center">
-                                        <input type="number" class="room-eq-input w-16 px-1 rounded-lg border-slate-200 text-right text-xs" min="0" max="${eq.max}" 
-                                               value="${config.equipment[eq.name + '_' + seg] || 0}" data-room="${roomName}" data-name="${eq.name}" data-seg="${seg}" />
-                                    </td>
-                                `).join('')}
-                            </tr>
-                        `;
-                        }).join('')}
-                    </tbody>
-                </table>
+            <div class="space-y-4">
+                ${eqs.map(eq => {
+                    return `
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${eq.name}</span>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[11px] text-primary font-bold">¥${eq.price.toLocaleString()}</span>
+                                    <span class="text-[10px] text-slate-400 font-medium">/ 区分 (最大${eq.max})</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            ${['午前', '午後', '夜間'].map(seg => `
+                                <div class="flex flex-col gap-1.5 items-center">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${seg}</span>
+                                    ${renderStepper('', config.equipment[eq.name + '_' + seg] || 0, 0, eq.max, `data-room="${roomName}" data-name="${eq.name}" data-seg="${seg}" class="room-eq-input"`)}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                }).join('')}
             </div>
         `;
     }
@@ -670,11 +686,44 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        document.querySelectorAll('.stepper-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.getAttribute('data-action');
+                const container = btn.closest('.shooter-stepper');
+                const input = container.querySelector('.stepper-input');
+                let val = parseInt(input.value) || 0;
+                const min = parseInt(input.getAttribute('min')) || 0;
+                const max = input.hasAttribute('max') ? parseInt(input.getAttribute('max')) : null;
+
+                if (action === 'plus') {
+                    if (max === null || val < max) val++;
+                } else if (action === 'minus') {
+                    if (val > min) val--;
+                }
+
+                input.value = val;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                container.querySelector('.stepper-minus').disabled = (val <= min);
+                if (max !== null) {
+                    container.querySelector('.stepper-plus').disabled = (val >= max);
+                }
+            });
+        });
+
         document.querySelectorAll('.room-creation-input').forEach(input => {
             input.addEventListener('input', () => {
                 const room = input.getAttribute('data-room');
                 const type = input.getAttribute('data-type');
-                roomConfigs[room].creationHours[type] = parseFloat(input.value) || 0;
+                let val = parseFloat(input.value) || 0;
+                if (val < 0) { val = 0; input.value = 0; }
+                roomConfigs[room].creationHours[type] = val;
+
+                const container = input.closest('.shooter-stepper');
+                if (container) {
+                    container.querySelector('.stepper-minus').disabled = (val <= 0);
+                }
+
                 calculateTotal();
             });
         });
@@ -711,7 +760,15 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('input', () => {
                 const room = input.getAttribute('data-room');
                 const type = input.getAttribute('data-type');
-                roomConfigs[room].hvac[type] = parseFloat(input.value) || 0;
+                let val = parseFloat(input.value) || 0;
+                if (val < 0) { val = 0; input.value = 0; }
+                roomConfigs[room].hvac[type] = val;
+
+                const container = input.closest('.shooter-stepper');
+                if (container) {
+                    container.querySelector('.stepper-minus').disabled = (val <= 0);
+                }
+
                 calculateTotal();
             });
         });
@@ -721,11 +778,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const room = input.getAttribute('data-room');
                 const name = input.getAttribute('data-name');
                 const seg = input.getAttribute('data-seg');
-                const max = parseInt(input.getAttribute('max'));
+                const max = input.hasAttribute('max') ? parseInt(input.getAttribute('max')) : null;
+                const min = parseInt(input.getAttribute('min')) || 0;
                 let val = parseInt(input.value) || 0;
-                if (val > max) { val = max; input.value = max; }
-                if (val < 0) { val = 0; input.value = 0; }
+                
+                if (max !== null && val > max) { val = max; input.value = max; }
+                if (val < min) { val = min; input.value = min; }
+                
                 roomConfigs[room].equipment[name + '_' + seg] = val;
+
+                const container = input.closest('.shooter-stepper');
+                if (container) {
+                    container.querySelector('.stepper-minus').disabled = (val <= min);
+                    if (max !== null) {
+                        container.querySelector('.stepper-plus').disabled = (val >= max);
+                    }
+                }
+                
                 calculateTotal();
             });
         });
