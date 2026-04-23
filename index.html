@@ -47,6 +47,42 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+        @media print {
+            body { background: white !important; color: black !important; }
+            header, section, .no-print, #mobile-total-bar, .remove-room-btn, .step-item, #step-navigation, #prev-step-btn, #next-step-btn, .mb-10.px-2.no-print { display: none !important; }
+            main { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+            .lg\:w-96 { width: 100% !important; }
+            .sticky { position: static !important; }
+            .rounded-3xl, .shadow-xl { border-radius: 0 !important; box-shadow: none !important; border: none !important; }
+            .bg-slate-900 { background: transparent !important; color: black !important; padding: 0 !important; border-bottom: 2px solid black !important; margin-bottom: 20px !important; }
+            .bg-slate-900 h3 { color: black !important; font-size: 20pt !important; }
+            #sim-details-list { max-height: none !important; overflow: visible !important; }
+            .p-6 { padding: 0 !important; }
+            .mt-6 { margin-top: 2rem !important; display: block !important; } /* 免責事項をしっかり表示 */
+            .p-4.bg-slate-50 { background: transparent !important; border: 1.5px solid #000 !important; color: #000 !important; padding: 10px !important; }
+            .p-4.bg-slate-50 p { font-size: 8pt !important; line-height: 1.4 !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+
+        /* アニメーション用 */
+        .animate-in {
+            animation-duration: 400px;
+            animation-fill-mode: both;
+        }
+        .fade-in {
+            animation-name: fadeIn;
+        }
+        .slide-in-from-right-4 {
+            animation-name: slideInRight;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(1rem); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
     <title>大垣市情報工房 | 料金シミュレーター</title>
 </head>
@@ -80,19 +116,68 @@
         <div class="flex flex-col lg:flex-row gap-8">
             
             <!-- 左側：設定エリア -->
-            <div class="flex-1 space-y-8 min-w-0">
+            <div class="flex-1 space-y-8 min-w-0 no-print">
                 
-                <!-- セクション1: 施設選択 -->
-                <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
-                    <div class="flex items-center justify-between mb-8 gap-4">
-                        <h2 class="flex items-center gap-3 text-lg font-bold text-slate-900 dark:text-white">
-                            <span class="bg-primary w-1.5 h-6 rounded-full"></span>
-                            施設を選択してください
-                        </h2>
-                        <button id="reset-inputs-btn" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-black hover:bg-red-100 transition-all shadow-sm">
-                            入力をクリア
+                <!-- 日程管理 (Day Tabs) -->
+                <div id="day-management-container" class="mb-2 px-2 no-print">
+                    <div class="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-2">
+                        <div id="day-tabs-list" class="flex items-center gap-2">
+                            <!-- JSで生成: <button class="day-tab ...">1日目</button> -->
+                        </div>
+                        <button id="add-day-btn" class="flex-shrink-0 size-10 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-slate-400 hover:border-primary hover:text-primary transition-all flex items-center justify-center group" title="日程を追加">
+                            <svg class="size-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
                         </button>
                     </div>
+                </div>
+
+                <!-- ステップインジケーター -->
+                <div class="mb-10 px-2 pt-4 no-print overflow-x-auto scrollbar-hide">
+                    <div class="flex items-center justify-between min-w-[600px] relative">
+                        <!-- Progress Line -->
+                        <div class="absolute top-5 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 z-0"></div>
+                        <div id="step-progress-line" class="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500 z-0" style="width: 0%"></div>
+                        
+                        <!-- Step Items -->
+                        <div class="step-item flex flex-col items-center gap-2 z-10" data-step="1">
+                            <div class="step-bubble size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-lg shadow-primary/20 transition-all duration-300">1</div>
+                            <span class="text-[10px] font-bold text-slate-900 dark:text-white mt-1">施設選択</span>
+                        </div>
+                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="2">
+                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">2</div>
+                            <span class="text-[10px] font-bold text-slate-400 mt-1">利用時間</span>
+                        </div>
+                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="3">
+                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">3</div>
+                            <span class="text-[10px] font-bold text-slate-400 mt-1">本番時間</span>
+                        </div>
+                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="4">
+                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">4</div>
+                            <span class="text-[10px] font-bold text-slate-400 mt-1">冷暖房・備品</span>
+                        </div>
+                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="5">
+                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">5</div>
+                            <span class="text-[10px] font-bold text-slate-400 mt-1">完了</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ステップ別コンテンツ -->
+                <div id="wizard-steps-container">
+                    
+                    <!-- Step 1: 施設選択 -->
+                    <section id="wizard-step-1" class="step-content">
+                        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
+                            <div class="flex items-center justify-between mb-8 gap-4">
+                                <h2 class="flex items-center gap-3 text-lg font-extrabold text-slate-900 dark:text-white">
+                                    <span class="bg-primary w-1.5 h-6 rounded-full"></span>
+                                    1. 利用する施設を選択してください
+                                </h2>
+                                <button id="reset-inputs-btn" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-black hover:bg-red-100 transition-all shadow-sm">
+                                    入力をクリア
+                                </button>
+                            </div>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="room-buttons">
                         <!-- ボタンはJSで生成されたものと競合しないよう、初期表示としてHTMLに記述 -->
@@ -133,10 +218,54 @@
                             <span class="text-xs text-slate-500 font-medium">時間貸し</span>
                         </button>
                     </div>
-                </section>
+                        </div>
+                    </section>
 
-                <!-- JSで挿入される動的設定エリア -->
-                <div id="room-configs-container" class="space-y-8 min-w-0"></div>
+                    <!-- Step 2～4: JSで動的に中身を差し替える設定エリア -->
+                    <section id="wizard-step-configs" class="step-content hidden">
+                        <div id="room-configs-container" class="space-y-8 min-w-0"></div>
+                    </section>
+
+                    <!-- Step 5: 完了・アクション -->
+                    <section id="wizard-step-5" class="step-content hidden">
+                        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm text-center">
+                            <div class="size-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <svg class="size-10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-black text-slate-900 dark:text-white mb-4">入力を完了しました！</h2>
+                            <p class="text-slate-500 mb-10 max-w-sm mx-auto">
+                                右側の見積明細をご確認ください。このまま印刷したり、見積結果をテキストとしてコピーすることが可能です。
+                            </p>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
+                                <button onclick="document.getElementById('copy-estimate-btn').click()" class="flex items-center justify-center gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-all">
+                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    結果をコピー
+                                </button>
+                                <button onclick="document.getElementById('print-estimate-btn').click()" class="flex items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-white hover:bg-primary-700 transition-all shadow-lg shadow-primary/20">
+                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                    見積書を印刷
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ナビゲーションボタン -->
+                <div class="flex items-center justify-between pt-8 no-print">
+                    <button id="prev-step-btn" class="px-8 py-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-black text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-all disabled:opacity-0 pointer-events-none" disabled>
+                        戻る
+                    </button>
+                    <button id="next-step-btn" class="px-10 py-4 rounded-2xl bg-primary text-white text-sm font-black shadow-lg shadow-primary/20 hover:bg-primary-700 transition-all active:scale-[0.98]">
+                        次へ進む
+                    </button>
+                </div>
             </div>
 
             <!-- 右側：結果パネル -->
@@ -147,6 +276,9 @@
                             <h3 class="font-bold flex items-center gap-2">
                                 見積結果（概算）
                             </h3>
+                            <div class="hidden print:block text-[10px] font-normal mt-1 opacity-70">
+                                発行日: <span id="print-date"></span> | 大垣市情報工房 料金シミュレーター
+                            </div>
                         </div>
                         <div class="p-6">
                             <dl class="space-y-6">
@@ -163,16 +295,31 @@
                                 </div>
                             </dl>
                             
-                            <div class="mt-8">
-                                <button id="copy-estimate-btn" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-white hover:bg-primary-700 transition-all shadow-lg shadow-primary/20 active:scale-[0.98]">
-                                    結果をコピーする
+                            <div class="mt-8 grid grid-cols-2 gap-3 no-print">
+                                <button id="copy-estimate-btn" class="flex items-center justify-center gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-all active:scale-[0.98]">
+                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    結果をコピー
+                                </button>
+                                <button id="print-estimate-btn" class="flex items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-white hover:bg-primary-700 transition-all shadow-lg shadow-primary/20 active:scale-[0.98]">
+                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                    見積書を印刷
                                 </button>
                             </div>
                             
-                            <div class="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 flex gap-3 text-slate-500">
-                                <p class="text-[11px] font-medium leading-relaxed">
-                                    【ご注意】 この見積もりは規程に基づく概算です。正確な料金は窓口での本申請時に確定いたします。
-                                </p>
+                            <div class="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-slate-500">
+                                <div class="text-[10px] sm:text-[11px] font-bold space-y-2 leading-relaxed">
+                                    <p class="border-b border-slate-200 dark:border-slate-700 pb-1 mb-2 text-slate-900 dark:text-white">【見積明細に関する通知・免責事項】</p>
+                                    <ul class="list-disc pl-4 space-y-1 font-medium">
+                                        <li>本状の合計金額は入力情報に基づく概算見積であり、実際の請求額は窓口での正式申請時に「大垣市情報工房条例」に基づき確定いたします。</li>
+                                        <li>催事の内容や入場料の設定状況により、別途加算料金が発生する、または減免が適用される場合があります。</li>
+                                        <li>本ツールは正確を期して作成しておりますが、算出結果の完全性を保証するものではありません。</li>
+                                        <li>本ツールおよび見積書の利用により発生したいかなる損害についても、当施設は一切の責任を負いかねます。</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
