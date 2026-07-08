@@ -29,7 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
             alldayAm: 1470, alldayPm: 1950, alldayNight: 2140,
             extHour: 720,
             hasHvac: false,
-            specificEq: []
+            specificEq: [
+                { name: "音響設備", price: 0, max: 1 }
+            ]
         },
         "多目的研修室": {
             baseAm: 4120, basePm: 5510, baseNight: 6020, baseAllday: 13320,
@@ -114,6 +116,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const getActiveDay = () => days[activeDayIndex];
 
     // ---- 2. 状態管理（ステップ制御・日程制御） ----
+
+    /**
+     * 選択済みの利用区分から performanceTime の開始・終了時刻を算出して更新する。
+     * ステップ2からステップ3に進む際に呼び出す。
+     */
+    function syncPerformanceTimeFromSegments(dayData) {
+        dayData.selectedRooms.forEach(roomName => {
+            const cfg = dayData.roomConfigs[roomName];
+            if (!cfg || pricingData[roomName].isHourly) return;
+            const segs = cfg.timeSegments;
+            if (!segs || segs.length === 0) return;
+
+            const isFull = segs.includes('全日') || (segs.includes('午前') && segs.includes('午後') && segs.includes('夜間'));
+
+            let startTime = null, endTime = null;
+
+            if (isFull) {
+                // 全日（または3区分全て）選択時も早朝延長を考慮
+                startTime = cfg.extHours['早朝延長'] > 0 ? '08:30' : '09:00';
+                endTime = '21:30';
+            } else {
+                // 早朝延長を考慮
+                if (segs.includes('午前')) {
+                    startTime = cfg.extHours['早朝延長'] > 0 ? '08:30' : '09:00';
+                } else if (segs.includes('午後')) {
+                    startTime = '13:00';
+                } else if (segs.includes('夜間')) {
+                    startTime = '18:00';
+                }
+
+                if (segs.includes('夜間')) {
+                    endTime = '21:30';
+                } else if (segs.includes('午後')) {
+                    endTime = cfg.extHours['夕方延長'] > 0 ? '18:00' : '17:00';
+                } else if (segs.includes('午前')) {
+                    endTime = cfg.extHours['昼間延長'] > 0 ? '13:00' : '12:00';
+                }
+            }
+
+            if (startTime && endTime) {
+                cfg.performanceTime = { start: startTime, end: endTime };
+            }
+        });
+    }
+
     function showStep(step) {
         if (step === 6) { // 最初に戻る（Step 5の次）
             resetAll();
@@ -121,6 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         currentStep = step;
+
+        // ステップ3に移行する際、本番時間をStep2の利用区分から自動更新
+        if (step === 3) {
+            syncPerformanceTimeFromSegments(getActiveDay());
+        }
         
         // 各コンテンツの表示切り替え
         document.querySelectorAll('.step-content').forEach(s => s.classList.add('hidden'));
@@ -146,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!container) return;
 
         container.innerHTML = days.map((day, index) => `
-            <div class="flex items-center bg-white dark:bg-slate-900 rounded-xl border ${index === activeDayIndex ? 'border-primary ring-1 ring-primary/20' : 'border-slate-200 dark:border-slate-800'} overflow-hidden shadow-sm">
+            <div class="flex items-center flex-shrink-0 bg-white dark:bg-slate-900 rounded-xl border ${index === activeDayIndex ? 'border-primary ring-1 ring-primary/20' : 'border-slate-200 dark:border-slate-800'} overflow-hidden shadow-sm">
                 <button class="day-tab px-5 py-2.5 text-xs font-black transition-all ${index === activeDayIndex ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}" onclick="switchDay(${index})">
                     ${day.name}
                 </button>
@@ -428,14 +480,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <label class="text-[11px] font-bold text-slate-400 block mb-4">一般利用 (¥230/時間)</label>
                     <div class="flex items-center gap-4">
-                        ${renderStepper(config.creationHours.adult, 0, null, `data-room="${roomName}" data-type="adult"`, 'room-creation-input')}
+                        ${renderStepper(config.creationHours.adult, 0, 24, `data-room="${roomName}" data-type="adult"`, 'room-creation-input')}
                         <span class="text-sm font-bold">時間</span>
                     </div>
                 </div>
                 <div class="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                     <label class="text-[11px] font-bold text-slate-400 block mb-4">小・中学生利用 (¥110/時間)</label>
                     <div class="flex items-center gap-4">
-                        ${renderStepper(config.creationHours.child, 0, null, `data-room="${roomName}" data-type="child"`, 'room-creation-input')}
+                        ${renderStepper(config.creationHours.child, 0, 24, `data-room="${roomName}" data-type="child"`, 'room-creation-input')}
                         <span class="text-sm font-bold">時間</span>
                     </div>
                 </div>
@@ -470,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         冷房
                     </label>
                     <div class="flex items-center gap-3">
-                        ${renderStepper(config.hvac.cooler, 0, null, `data-room="${roomName}" data-type="cooler"`, 'room-hvac-input')}
+                        ${renderStepper(config.hvac.cooler, 0, 24, `data-room="${roomName}" data-type="cooler"`, 'room-hvac-input')}
                         <span class="text-[10px] text-slate-400 font-bold">¥${data.coolerRate}/時</span>
                     </div>
                 </div>
@@ -479,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          暖房
                     </label>
                     <div class="flex items-center gap-3">
-                        ${renderStepper(config.hvac.heater, 0, null, `data-room="${roomName}" data-type="heater"`, 'room-hvac-input')}
+                        ${renderStepper(config.hvac.heater, 0, 24, `data-room="${roomName}" data-type="heater"`, 'room-hvac-input')}
                         <span class="text-[10px] text-slate-400 font-bold">¥${data.heaterRate}/時</span>
                     </div>
                 </div>
@@ -576,23 +628,89 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         } else if (currentStep === 3) {
             // 本番時間・入場料
+            const hasAdmission = config.admissionFee > 0;
             configHtml = `
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div class="mb-8 pb-4 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                        <h2 class="text-lg font-extrabold text-slate-900 dark:text-white">3. 本番時間と割増の設定 (${activeRoom})</h2>
+                        <div class="flex flex-col gap-1">
+                            <h2 class="text-lg font-extrabold text-slate-900 dark:text-white">3. 本番時間と割増の設定 (${activeRoom})</h2>
+                            <p class="text-[11px] text-slate-500 font-medium">※入場料が発生しない場合は、設定は不要です。</p>
+                        </div>
                     </div>
-                    <div class="space-y-10">
-                        <section><h3 class="flex items-center gap-2 text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">入場料等による加算設定</h3>${activeRoom === '創作コーナー' ? `<div class="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-xs font-bold text-slate-400 border border-dashed border-slate-200">この施設では入場料割増は適用されません。</div>` : renderAdmissionUI(activeRoom, config)}</section>
-                        <section class="bg-primary/[0.03] dark:bg-primary/[0.05] p-6 sm:p-8 rounded-[2rem] border border-primary/10 shadow-inner">
-                            <h3 class="flex items-center gap-2 text-[11px] font-black text-primary mb-4 uppercase tracking-wider">割増判定用の「本番時間」</h3>
-                            <p class="text-[10px] text-slate-500 mb-6 font-bold">※本番時間と重なる区分・延長時間にのみ割増が適用されます。</p>
-                            ${renderTimeline(activeRoom)}
-                            <div class="flex items-center gap-4 mt-8">
-                                <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 mb-1.5 block">本番 開始</label><input type="time" class="performance-time-input w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold p-3 focus:ring-primary h-12" data-room="${activeRoom}" data-type="start" value="${config.performanceTime.start}"></div>
-                                <span class="mt-5 text-slate-300 font-light">～</span>
-                                <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 mb-1.5 block">本番 終了</label><input type="time" class="performance-time-input w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold p-3 focus:ring-primary h-12" data-room="${activeRoom}" data-type="end" value="${config.performanceTime.end}"></div>
+                    
+                    <div class="space-y-8">
+                        <!-- 入場料徴収の有無を選択 -->
+                        <div class="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <label class="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-3">この日程・施設で入場料を徴収しますか？</label>
+                            <div class="flex flex-wrap gap-4">
+                                <label class="flex items-center gap-2.5 cursor-pointer bg-white dark:bg-slate-900 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-all select-none">
+                                    <input type="radio" name="has-admission" class="admission-toggle-radio" value="no" ${!hasAdmission ? 'checked' : ''} data-room="${activeRoom}">
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">いいえ（入場料なし）</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 cursor-pointer bg-white dark:bg-slate-900 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition-all select-none">
+                                    <input type="radio" name="has-admission" class="admission-toggle-radio" value="yes" ${hasAdmission ? 'checked' : ''} data-room="${activeRoom}">
+                                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">はい（入場料あり）</span>
+                                </label>
                             </div>
-                        </section>
+                        </div>
+
+                        <!-- 【いいえ】の時の案内カード -->
+                        <div id="admission-info-card" class="${hasAdmission ? 'hidden' : ''} p-6 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-3xl text-blue-800 dark:text-blue-300 flex flex-col gap-2.5 animate-in fade-in duration-300">
+                            <div class="flex items-center gap-2 font-bold text-xs">
+                                <span class="material-symbols-outlined text-lg">info</span>
+                                <span>入場料が発生しないため、このステップの設定は不要です</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 leading-relaxed font-bold">
+                                入場料を徴収しない場合、割増料金は適用されません。何も設定を変更せず、そのまま次のステップ（「次へ」ボタン）へお進みください。
+                            </p>
+                        </div>
+
+                        <!-- 【はい】の時の詳細設定エリア -->
+                        <div id="admission-details-area" class="${!hasAdmission ? 'hidden' : ''} space-y-10 animate-in fade-in duration-300">
+                            <section>
+                                <h3 class="flex items-center gap-2 text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">入場料等による加算設定</h3>
+                                ${activeRoom === '創作コーナー' ? `<div class="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-xs font-bold text-slate-400 border border-dashed border-slate-200">この施設では入場料割増は適用されません。</div>` : renderAdmissionUI(activeRoom, config)}
+                                
+                                <!-- 割増率についての説明テーブル -->
+                                <div class="mt-4 p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                                    <p class="font-black text-slate-800 dark:text-slate-200 mb-2">【割増率について】</p>
+                                    <p class="mb-3 font-medium text-slate-500">入場料等を徴収する場合は、施設利用料金（附属設備・冷暖房料金含まず）が割増料金となります。割増率は以下の通りです。</p>
+                                    <table class="w-full text-left border-collapse font-bold">
+                                        <thead>
+                                            <tr class="border-b border-slate-200 dark:border-slate-700 text-slate-400 text-[10px]">
+                                                <th class="py-2 pr-4">入場料等の額（1人1回あたり）</th>
+                                                <th class="py-2">割増率</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                            <tr>
+                                                <td class="py-2 pr-4 font-semibold">1,000円未満の場合</td>
+                                                <td class="py-2 text-primary font-black">130％（1.3倍）</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="py-2 pr-4 font-semibold">1,000円以上3,000円未満の場合</td>
+                                                <td class="py-2 text-primary font-black">150％（1.5倍）</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="py-2 pr-4 font-semibold">3,000円以上の場合</td>
+                                                <td class="py-2 text-primary font-black">200％（2.0倍）</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+                            
+                            <section class="bg-primary/[0.03] dark:bg-primary/[0.05] p-6 sm:p-8 rounded-[2rem] border border-primary/10 shadow-inner">
+                                <h3 class="flex items-center gap-2 text-[11px] font-black text-primary mb-4 uppercase tracking-wider">割増判定用の「本番時間」</h3>
+                                <p class="text-[10px] text-slate-500 mb-6 font-bold">※本番時間と重なる区分・延長時間にのみ割増が適用されます。</p>
+                                ${renderTimeline(activeRoom)}
+                                <div class="flex items-center gap-4 mt-8">
+                                    <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 mb-1.5 block">本番 開始</label><input type="time" class="performance-time-input w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold p-3 focus:ring-primary h-12" data-room="${activeRoom}" data-type="start" value="${config.performanceTime.start}"></div>
+                                    <span class="mt-5 text-slate-300 font-light">～</span>
+                                    <div class="flex-1"><label class="text-[9px] font-bold text-slate-400 mb-1.5 block">本番 終了</label><input type="time" class="performance-time-input w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold p-3 focus:ring-primary h-12" data-room="${activeRoom}" data-type="end" value="${config.performanceTime.end}"></div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
             `;
@@ -618,12 +736,60 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- 4. イベント・計算 ----
     function attachEvents() {
         const day = getActiveDay();
+
+        // 入場料徴収の有無切り替えトグルのイベント
+        document.querySelectorAll('.admission-toggle-radio').forEach(r => {
+            r.onchange = () => {
+                const room = r.dataset.room;
+                const cfg = day.roomConfigs[room];
+                const isYes = r.value === 'yes';
+                
+                const detailsArea = document.getElementById('admission-details-area');
+                const infoCard = document.getElementById('admission-info-card');
+                
+                if (isYes) {
+                    if (detailsArea) detailsArea.classList.remove('hidden');
+                    if (infoCard) infoCard.classList.add('hidden');
+                    // 「はい」に切り替えた場合で入場料が0ならデフォルトで999円を設定
+                    if (cfg.admissionFee === 0) {
+                        cfg.admissionFee = 999;
+                        cfg.admissionMult = calculateAdmissionMult(cfg.admissionFee);
+                    }
+                } else {
+                    if (detailsArea) detailsArea.classList.add('hidden');
+                    if (infoCard) infoCard.classList.remove('hidden');
+                    // 「いいえ」に切り替えたら入場料を0にリセット
+                    cfg.admissionFee = 0;
+                    cfg.admissionMult = 1.0;
+                }
+                
+                // 入力フィールドの同期
+                const feeInput = document.querySelector('.room-admission-fee-input');
+                if (feeInput) {
+                    feeInput.value = cfg.admissionFee || '';
+                }
+                const multVal = document.getElementById('adm-mult-val');
+                if (multVal) {
+                    multVal.textContent = cfg.admissionMult.toFixed(1) + ' 倍';
+                }
+                
+                calculateTotal();
+            };
+        });
+
         document.querySelectorAll('.room-tab').forEach(t => t.onclick = () => { day.activeRoom = t.dataset.room; renderRoomConfigs(); });
         document.querySelectorAll('.remove-room-btn').forEach(b => b.onclick = () => { const r = b.dataset.room; day.selectedRooms = day.selectedRooms.filter(x => x !== r); delete day.roomConfigs[r]; updateButtons(); renderRoomConfigs(); calculateTotal(); });
         document.querySelectorAll('.time-checkbox').forEach(c => c.onchange = () => {
             const r = c.dataset.room, v = c.value, cfg = day.roomConfigs[r];
+            const prevSegs = [...cfg.timeSegments]; // 変更前の区分を保存
             if (v === '全日') cfg.timeSegments = c.checked ? ['全日'] : [];
             else { if (c.checked) { cfg.timeSegments = cfg.timeSegments.filter(x => x !== '全日'); cfg.timeSegments.push(v); } else { cfg.timeSegments = cfg.timeSegments.filter(x => x !== v); } }
+            // 利用区分が変更された場合は延長時間をリセット
+            const newSegs = cfg.timeSegments;
+            const changed = prevSegs.length !== newSegs.length || !prevSegs.every(s => newSegs.includes(s));
+            if (changed) {
+                cfg.extHours = { "早朝延長": 0, "昼間延長": 0, "夕方延長": 0 };
+            }
             renderRoomConfigs(); calculateTotal();
         });
         document.querySelectorAll('.room-ext-select').forEach(s => s.onchange = () => { day.roomConfigs[s.dataset.room].extHours[s.dataset.ext] = Number(s.value); calculateTotal(); });
