@@ -1,347 +1,403 @@
 <!DOCTYPE html>
-<html class="light" lang="ja">
-
+<html lang="ja">
 <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,FILL@0..1&amp;display=swap" rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: { 
-                        "primary": {
-                            DEFAULT: "#1e40af", // より落ち着いたインディゴブルー
-                            50: "#f0f9ff",
-                            100: "#e0f2fe",
-                            200: "#bae6fd",
-                            300: "#7dd3fc",
-                            400: "#38bdf8",
-                            500: "#0ea5e9",
-                            600: "#0284c7",
-                            700: "#0369a1",
-                            800: "#075985",
-                            900: "#0c4a6e",
-                        }, 
-                        "background-light": "#f8fafc", 
-                        "background-dark": "#020617" 
-                    },
-                    fontFamily: { 
-                        "sans": ["Noto Sans JP", "system-ui", "-apple-system", "sans-serif"] 
-                    },
-                },
-            },
-        }
-    </script>
-    <style>
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        body {
-            font-feature-settings: "palt";
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        @media print {
-            body { background: white !important; color: black !important; }
-            header, section, .no-print, #mobile-total-bar, .remove-room-btn, .step-item, #step-navigation, #prev-step-btn, #next-step-btn, .mb-10.px-2.no-print { display: none !important; }
-            main { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
-            .lg\:w-96 { width: 100% !important; }
-            .sticky { position: static !important; }
-            .rounded-3xl, .shadow-xl { border-radius: 0 !important; box-shadow: none !important; border: none !important; }
-            .bg-slate-900 { background: transparent !important; color: black !important; padding: 0 !important; border-bottom: 2px solid black !important; margin-bottom: 20px !important; }
-            .bg-slate-900 h3 { color: black !important; font-size: 20pt !important; }
-            #sim-details-list { max-height: none !important; overflow: visible !important; }
-            .p-6 { padding: 0 !important; }
-            .mt-6 { margin-top: 2rem !important; display: block !important; } /* 免責事項をしっかり表示 */
-            .p-4.bg-slate-50 { background: transparent !important; border: 1.5px solid #000 !important; color: #000 !important; padding: 10px !important; }
-            .p-4.bg-slate-50 p { font-size: 8pt !important; line-height: 1.4 !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-
-        /* アニメーション用 */
-        .animate-in {
-            animation-duration: 400px;
-            animation-fill-mode: both;
-        }
-        .fade-in {
-            animation-name: fadeIn;
-        }
-        .slide-in-from-right-4 {
-            animation-name: slideInRight;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(1rem); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-    </style>
-    <title>大垣市情報工房 | 料金シミュレーター</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>施設レイアウトシミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=60">
 </head>
+<body class="text-slate-900 font-sans h-screen flex flex-col overflow-hidden relative bg-[#f8fafc]">
+    <!-- Ambient Background Orbs -->
+    <div class="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none z-0"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-cyan-500/15 blur-[120px] pointer-events-none z-0"></div>
+    <div class="absolute top-[30%] right-[20%] w-[30vw] h-[30vw] rounded-full bg-blue-400/20 blur-[120px] pointer-events-none z-0"></div>
 
-<body class="bg-background-light dark:bg-background-dark font-sans text-slate-800 dark:text-slate-100 min-h-screen">
-    
-    <!-- ヘッダー -->
-    <header class="sticky top-0 z-50 w-full bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-        <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <div class="flex items-center gap-3">
-                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-md">
-                    <svg class="size-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m-1 4h1m5-12h1m-1 4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5" />
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-base sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">大垣市情報工房</h1>
-                    <p class="text-[10px] sm:text-[11px] font-bold text-slate-500">施設利用料金シミュレーター</p>
-                </div>
+    <!-- Header -->
+    <header class="px-3 lg:px-8 py-2.5 lg:py-4 flex justify-between items-center relative z-50 bg-white/40 backdrop-blur-2xl border-b border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div class="flex items-center gap-2 lg:gap-3 shrink-0">
+            <div class="p-1.5 lg:p-2 bg-blue-600 rounded-lg shadow-blue-200 shadow-lg shrink-0">
+                <svg class="w-4 h-4 lg:w-6 lg:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
             </div>
-            <div class="flex items-center gap-2">
-                <a href="legal.html" class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-primary hover:text-primary transition-all shadow-sm">
-                    <span class="hidden sm:inline">利用規約・免責事項</span>
-                    <span class="sm:hidden">利用規約</span>
-                </a>
+            <div>
+                <h1 class="text-xs lg:text-lg font-bold tracking-tight text-slate-800 leading-none whitespace-nowrap">
+                    施設レイアウトシミュレーター
+                </h1>
+                <p class="text-[7px] lg:text-[10px] font-medium text-slate-500 uppercase tracking-widest hidden sm:block">Layout Simulation v2.0</p>
             </div>
+        </div>
+        <div class="flex gap-1.5 lg:gap-3 items-center overflow-x-auto scrollbar-hide py-1">
+            <button id="undoBtn" title="1つ前の操作に戻す" class="px-2 lg:px-4 py-1.5 text-[9px] lg:text-sm font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-all shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                <span class="hidden md:inline">元に戻す</span>
+            </button>
+            <button id="multiSelectBtn" title="複数選択モードの切替" class="px-2.5 lg:px-4 py-1.5 text-[9px] lg:text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-all shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
+                <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                <span class="whitespace-nowrap">選択モード</span>
+            </button>
+            <button id="saveFileBtn" title="保存" class="px-2 lg:px-5 py-1.5 text-[9px] lg:text-sm font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-all shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                <span class="hidden md:inline">保存</span>
+            </button>
+            <button id="loadFileBtn" title="開く" class="px-2 lg:px-5 py-1.5 text-[9px] lg:text-sm font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-all shadow-sm flex items-center gap-1 shrink-0 whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                <span class="hidden md:inline">開く</span>
+            </button>
+            <input type="file" id="fileInput" class="hidden" accept=".json">
+            <button id="clearBtn" title="リセット" class="px-2.5 lg:px-5 py-1.5 text-[9px] lg:text-sm font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition-all shadow-sm shrink-0 whitespace-nowrap">
+                リセット
+            </button>
+            <button id="exportBtn" title="画像で保存" class="px-3 lg:px-6 py-1.5 text-[9px] lg:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-all flex items-center gap-1.5 shadow-md hover:shadow-lg active:scale-95 shrink-0 whitespace-nowrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span>画像保存</span>
+            </button>
         </div>
     </header>
 
-    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-10">
-        <div class="flex flex-col lg:flex-row gap-8">
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col-reverse lg:flex-row overflow-hidden relative z-10">
+        <!-- Sidebar / Mobile Toolbar -->
+        <aside id="sidebar" class="w-full lg:w-[400px] max-h-[45vh] lg:max-h-none lg:h-full p-3 lg:p-8 flex flex-col gap-3 lg:gap-8 overflow-y-auto relative z-40 bg-white/95 backdrop-blur-3xl border-t lg:border-t-0 lg:border-r border-slate-200 shadow-[0_-10px_30px_rgb(0,0,0,0.08)] lg:shadow-[15px_0_50px_rgb(0,0,0,0.05)] shrink-0">
             
-            <!-- 左側：設定エリア -->
-            <div class="flex-1 space-y-8 min-w-0 no-print">
-                
-                <!-- 日程管理 (Day Tabs) -->
-                <div id="day-management-container" class="mb-2 px-2 no-print">
-                    <div class="flex flex-wrap items-center gap-2 pb-2">
-                        <div id="day-tabs-list" class="contents">
-                            <!-- JSで生成: <button class="day-tab ...">1日目</button> -->
+            <!-- Display & Furniture Rotation Controls Panel -->
+            <div id="viewControlPanel" class="bg-slate-900 text-white rounded-xl lg:rounded-2xl p-2.5 lg:p-5 shadow-lg border border-slate-700/50 space-y-2.5 shrink-0">
+                <div class="flex items-center justify-between">
+                    <label class="text-[10px] lg:text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        備品回転・画面表示操作
+                    </label>
+                    <!-- 方位針 (北固定) -->
+                    <div id="compass" class="relative w-7 h-7 lg:w-9 lg:h-9 bg-slate-800/90 rounded-full shadow border border-white/20 flex items-center justify-center shrink-0" title="方位針 (北固定)">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-20">
+                            <div class="w-[1px] h-full bg-white/40"></div>
+                            <div class="w-full h-[1px] bg-white/40 rotate-90"></div>
                         </div>
-                        <button id="add-day-btn" class="flex-shrink-0 size-10 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-slate-400 hover:border-primary hover:text-primary transition-all flex items-center justify-center group" title="日程を追加">
-                            <svg class="size-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- ステップインジケーター -->
-                <div class="mb-10 px-2 pt-4 no-print overflow-x-auto scrollbar-hide">
-                    <div class="flex items-center justify-between min-w-[600px] relative">
-                        <!-- Progress Line -->
-                        <div class="absolute top-5 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 z-0"></div>
-                        <div id="step-progress-line" class="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-500 z-0" style="width: 0%"></div>
-                        
-                        <!-- Step Items -->
-                        <div class="step-item flex flex-col items-center gap-2 z-10" data-step="1">
-                            <div class="step-bubble size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-lg shadow-primary/20 transition-all duration-300">1</div>
-                            <span class="text-[10px] font-bold text-slate-900 dark:text-white mt-1">施設選択</span>
-                        </div>
-                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="2">
-                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">2</div>
-                            <span class="text-[10px] font-bold text-slate-400 mt-1">利用時間</span>
-                        </div>
-                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="3">
-                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">3</div>
-                            <span class="text-[10px] font-bold text-slate-400 mt-1">本番時間</span>
-                        </div>
-                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="4">
-                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">4</div>
-                            <span class="text-[10px] font-bold text-slate-400 mt-1">冷暖房・備品</span>
-                        </div>
-                        <div class="step-item flex flex-col items-center gap-2 z-10 opacity-30" data-step="5">
-                            <div class="step-bubble size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-400 flex items-center justify-center font-bold transition-all duration-300">5</div>
-                            <span class="text-[10px] font-bold text-slate-400 mt-1">完了</span>
+                        <div class="absolute top-0.5 text-[6px] lg:text-[7px] font-black text-red-500">N</div>
+                        <div class="absolute bottom-0.5 text-[5px] lg:text-[6px] font-bold text-slate-400">S</div>
+                        <div class="absolute left-0.5 text-[5px] lg:text-[6px] font-bold text-slate-400">W</div>
+                        <div class="absolute right-0.5 text-[5px] lg:text-[6px] font-bold text-slate-400">E</div>
+                        <div class="relative w-full h-full flex items-center justify-center">
+                            <div class="absolute top-[20%] w-0 h-0 border-l-[2px] border-l-transparent border-r-[2px] border-r-transparent border-b-[10px] lg:border-b-[12px] border-b-red-500"></div>
+                            <div class="absolute bottom-[20%] w-0 h-0 border-l-[2px] border-l-transparent border-r-[2px] border-r-transparent border-t-[10px] lg:border-t-[12px] border-t-slate-400"></div>
+                            <div class="z-10 w-1 h-1 bg-white rounded-full"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ステップ別コンテンツ -->
-                <div id="wizard-steps-container">
-                    
-                    <!-- Step 1: 施設選択 -->
-                    <section id="wizard-step-1" class="step-content">
-                        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
-                            <div class="flex items-center justify-between mb-8 gap-4">
-                                <h2 class="flex items-center gap-3 text-lg font-extrabold text-slate-900 dark:text-white">
-                                    <span class="bg-primary w-1.5 h-6 rounded-full"></span>
-                                    1. 利用する施設を選択してください
-                                </h2>
-                                <button id="reset-inputs-btn" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-black hover:bg-red-100 transition-all shadow-sm">
-                                    入力をクリア
-                                </button>
-                            </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="room-buttons">
-                        <!-- ボタンはJSで生成されたものと競合しないよう、初期表示としてHTMLに記述 -->
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="スインクホール">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">スインクホール</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 452人</span>
+                <!-- 備品回転ボタン -->
+                <div class="space-y-1">
+                    <span class="text-[8px] lg:text-[10px] text-slate-400 font-medium block">※選択中の備品を回転できます</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="rotateBtn" title="選択中の備品を右90°回転" class="py-1.5 px-2 lg:py-2 lg:px-3 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-lg lg:rounded-xl text-[10px] lg:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm border border-blue-400/30 whitespace-nowrap">
+                            <svg class="w-3.5 h-3.5 pointer-events-none shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                            <span class="pointer-events-none">選択備品 90°回転</span>
                         </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="セミナー室">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">セミナー室</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 80人</span>
-                        </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="研修室">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">研修室</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 12人</span>
-                        </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="多目的研修室">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">多目的研修室</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 50人</span>
-                        </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="会議室１">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">会議室１</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 12人</span>
-                        </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="会議室２">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">会議室２</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 12人</span>
-                        </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="会議室３">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">会議室３</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 36人</span>
-                        </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="会議室４">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">会議室４</span>
-                            <span class="text-xs text-slate-500 font-medium">定員: 60人</span>
-                        </button>
-                        <button class="sim-room-btn group flex flex-col gap-2 rounded-2xl border-2 border-slate-100 dark:border-slate-800 p-5 text-left transition-all hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50" data-room="創作コーナー">
-                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors">創作コーナー</span>
-                            <span class="text-xs text-slate-500 font-medium">時間貸し</span>
+                        <button id="rotateBtn180" title="選択中の備品を180°回転" class="py-1.5 px-2 lg:py-2 lg:px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white rounded-lg lg:rounded-xl text-[10px] lg:text-xs font-bold transition-all flex items-center justify-center gap-1 shadow-sm border border-indigo-400/30 whitespace-nowrap">
+                            <svg class="w-3.5 h-3.5 pointer-events-none shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+                            <span class="pointer-events-none">選択備品 180°回転</span>
                         </button>
                     </div>
-                        </div>
-                    </section>
-
-                    <!-- Step 2～4: JSで動的に中身を差し替える設定エリア -->
-                    <section id="wizard-step-configs" class="step-content hidden">
-                        <div id="room-configs-container" class="space-y-8 min-w-0"></div>
-                    </section>
-
-                    <!-- Step 5: 完了・アクション -->
-                    <section id="wizard-step-5" class="step-content hidden">
-                        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm text-center">
-                            <div class="size-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <svg class="size-10" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                            </div>
-                            <h2 class="text-2xl font-black text-slate-900 dark:text-white mb-4">入力を完了しました！</h2>
-                            <p class="text-slate-500 mb-10 max-w-sm mx-auto">
-                                右側の見積明細をご確認ください。このまま印刷したり、見積結果をテキストとしてコピーすることが可能です。
-                            </p>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
-                                <button onclick="document.getElementById('copy-estimate-btn').click()" class="flex items-center justify-center gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-all">
-                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    結果をコピー
-                                </button>
-                                <button onclick="document.getElementById('print-estimate-btn').click()" class="flex items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-white hover:bg-primary-700 transition-all shadow-lg shadow-primary/20">
-                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                        <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                    </svg>
-                                    見積書を印刷
-                                </button>
-                            </div>
-                        </div>
-                    </section>
                 </div>
 
-                <!-- ナビゲーションボタン -->
-                <div class="flex items-center justify-between pt-8 no-print">
-                    <button id="prev-step-btn" class="px-8 py-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-black text-slate-600 dark:text-slate-400 hover:bg-slate-50 transition-all disabled:opacity-0 pointer-events-none" disabled>
-                        戻る
-                    </button>
-                    <button id="next-step-btn" class="px-10 py-4 rounded-2xl bg-primary text-white text-sm font-black shadow-lg shadow-primary/20 hover:bg-primary-700 transition-all active:scale-[0.98]">
-                        次へ進む
+                <!-- ズームコントロール -->
+                <div class="flex items-center gap-1.5 pt-1 border-t border-slate-700/60">
+                    <span class="text-[9px] lg:text-[10px] font-bold text-slate-400 shrink-0">ズーム</span>
+                    <button id="zoomOutBtn" title="縮小" class="w-6 h-6 lg:w-7 lg:h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-white transition-all active:scale-95 text-xs border border-slate-700 shrink-0">-</button>
+                    <input type="range" id="zoomSlider" min="40" max="250" value="100" class="flex-1 h-1.5 accent-blue-500 bg-slate-700 rounded-lg cursor-pointer min-w-0">
+                    <span id="zoomValueText" class="w-8 lg:w-10 text-center font-bold text-blue-400 text-[10px] lg:text-xs shrink-0">100%</span>
+                    <button id="zoomInBtn" title="拡大" class="w-6 h-6 lg:w-7 lg:h-7 rounded-md bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-white transition-all active:scale-95 text-xs border border-slate-700 shrink-0">+</button>
+                    <button id="zoomResetBtn" title="100%にリセット" class="px-1.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-[9px] lg:text-[10px] font-bold text-slate-300 transition-all border border-slate-700 shrink-0">100%</button>
+                </div>
+            </div>
+
+            <!-- Room Selection & Settings (Compact on Mobile) -->
+            <div class="grid grid-cols-2 lg:flex lg:flex-col gap-2.5 lg:gap-4 shrink-0">
+                <div class="space-y-1 lg:space-y-4">
+                    <label class="text-[9px] lg:text-sm font-bold text-slate-500 uppercase tracking-wider block">対象エリア</label>
+                    <select id="roomSelect" class="w-full appearance-none bg-white border-2 border-slate-100 rounded-lg lg:rounded-xl py-1.5 lg:py-3 px-2 lg:px-4 pr-6 lg:pr-8 text-[11px] lg:text-sm font-medium text-slate-700 focus:border-blue-500 focus:ring-0 transition-all shadow-sm">
+                        <optgroup label="会議室">
+                            <option value="room1">会議室1</option>
+                            <option value="room2">会議室2</option>
+                            <option value="room3">会議室3</option>
+                            <option value="room4">会議室4</option>
+                        </optgroup>
+                        <optgroup label="研修室・ホール">
+                            <option value="training">研修室</option>
+                            <option value="multi">多目的研修室</option>
+                            <option value="seminar">セミナー室</option>
+                            <option value="swink">スインクホール</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="space-y-1 lg:space-y-4">
+                    <label class="text-[9px] lg:text-sm font-bold text-slate-500 uppercase tracking-wider block">レイアウトパターン</label>
+                    <div class="flex gap-1.5">
+                        <select id="layoutPatternSelect" class="flex-1 appearance-none bg-white border-2 border-slate-100 rounded-lg lg:rounded-xl py-1.5 lg:py-3 px-2 lg:px-4 pr-6 lg:pr-8 text-[11px] lg:text-sm font-medium text-slate-700 focus:border-blue-500 focus:ring-0 transition-all shadow-sm min-w-0">
+                            <option value="default">標準</option>
+                        </select>
+                        <button id="applyPatternBtn" class="px-2.5 lg:px-4 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg lg:rounded-xl text-[10px] lg:text-sm font-bold transition-all shrink-0">
+                            適用
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-span-2 lg:flex-none bg-slate-50 lg:bg-slate-100 rounded-lg lg:rounded-2xl p-2 lg:p-5 border border-slate-100 lg:border-slate-200 space-y-1">
+                    <label class="flex items-center gap-2 lg:gap-4 cursor-pointer">
+                        <div class="relative scale-75 lg:scale-100 shrink-0">
+                            <input type="checkbox" id="snapToggle" class="sr-only peer" checked>
+                            <div class="w-10 lg:w-12 h-5 lg:h-6 bg-slate-300 rounded-full peer peer-checked:bg-blue-600 transition-colors after:content-[''] after:absolute after:top-0.5 lg:after:top-1 after:left-0.5 lg:after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5 lg:peer-checked:after:translate-x-6"></div>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-[10px] lg:text-sm font-bold text-slate-700 truncate">スナップ機能 (10cm吸着)</span>
+                            <span class="text-[8px] text-blue-600 font-bold hidden lg:block">10cm (0.1m) 単位で吸着整列</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Components Section (Optimized Grid for Mobile) -->
+            <div class="flex-1 min-w-0 space-y-3 lg:space-y-4">
+                <!-- Basic Furniture -->
+                <div class="space-y-1.5 lg:space-y-4">
+                    <div class="flex items-baseline justify-between">
+                        <label class="text-[10px] lg:text-sm font-bold text-slate-500 uppercase tracking-wider block">基本備品</label>
+                        <span class="text-[8px] lg:text-xs text-blue-600 font-medium">※押すと部屋の中央に追加</span>
+                    </div>
+                    <!-- スマホで3列の綺麗なコンパクトグリッド -->
+                    <div class="grid grid-cols-3 lg:flex lg:flex-col gap-2 lg:gap-3">
+                        <!-- Desk -->
+                        <button id="addDeskBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-blue-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                                <div class="w-5 h-3 lg:w-10 lg:h-6 bg-white border-2 border-blue-400 rounded-sm"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">テーブル</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">1800×600</p>
+                                <span id="deskCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / 0</span>
+                            </div>
+                        </button>
+                        <!-- Chair -->
+                        <button id="addChairBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-blue-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                                <div class="w-4 h-4 lg:w-8 lg:h-8 border-2 border-blue-400 rounded-full"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">椅子</p>
+                                <p id="chairTypeDesc" class="text-[7px] lg:text-xs text-slate-400 truncate"></p>
+                                <span id="chairCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / 0</span>
+                            </div>
+                        </button>
+                        <!-- Whiteboard -->
+                        <button id="addWhiteboardBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-blue-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
+                                <div class="w-5 h-2.5 lg:w-10 lg:h-4 bg-white border-2 border-blue-300 rounded-sm"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">ボード</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">1800×500</p>
+                                <span id="whiteboardCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / 0</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Shared Equipment -->
+                <div class="space-y-1.5 lg:space-y-4 pt-2 lg:border-t lg:border-slate-100 lg:pt-6">
+                    <label class="text-[10px] lg:text-sm font-bold text-slate-500 uppercase tracking-wider block">共用備品</label>
+                    <div class="grid grid-cols-3 lg:flex lg:flex-col gap-2 lg:gap-3">
+                        <button id="addLecternSharedBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-slate-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                                <div class="w-4 h-2.5 bg-white border border-slate-400 rounded-sm"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">演台</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">900×500</p>
+                                <span id="lecternSharedCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / 2</span>
+                            </div>
+                        </button>
+                        <button id="addMcDeskBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-slate-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                                <div class="w-3.5 h-2.5 bg-white border border-slate-400 rounded-sm"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">司会台</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">750×500</p>
+                                <span id="mcDeskCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / 2</span>
+                            </div>
+                        </button>
+                        <button id="addSeminarLecternBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-slate-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                                <div class="w-4 h-2.5 bg-white border border-slate-400 rounded-sm"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">セミナー演台</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">1200×600</p>
+                                <span id="seminarLecternCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / -</span>
+                            </div>
+                        </button>
+                        <button id="addSwinkLecternBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95" style="display: none;">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-slate-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                                <div class="w-4 h-2.5 bg-white border border-slate-400 rounded-sm"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">ホール演台</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">1500×700</p>
+                                <span id="swinkLecternCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / -</span>
+                            </div>
+                        </button>
+                        <button id="addSwinkMcDeskBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95" style="display: none;">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-slate-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                                <div class="w-3.5 h-2.5 bg-white border border-slate-400 rounded-sm"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">ホール司会</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">600×450</p>
+                                <span id="swinkMcDeskCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / -</span>
+                            </div>
+                        </button>
+                        <button id="addScreenBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-slate-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                                <div class="w-5 h-1 bg-slate-400 rounded-full"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">スクリーン</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">2100×150</p>
+                                <span id="screenCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / 2</span>
+                            </div>
+                        </button>
+                        <button id="addMonitorBtn" class="furniture-btn group flex flex-col lg:flex-row items-center gap-1 lg:gap-6 p-2 lg:p-5 rounded-xl lg:rounded-[2rem] bg-white border border-slate-200/80 shadow-sm transition-all active:scale-95">
+                            <div class="w-8 h-8 lg:w-16 lg:h-16 bg-slate-50 rounded-lg lg:rounded-2xl flex items-center justify-center border border-slate-200 shrink-0">
+                                <div class="w-5 h-1.5 bg-slate-800 rounded-sm border border-slate-600"></div>
+                            </div>
+                            <div class="text-center lg:text-left flex-1 min-w-0 w-full">
+                                <p class="text-[10px] lg:text-lg font-black text-slate-800 truncate leading-tight">モニター</p>
+                                <p class="text-[7px] lg:text-xs text-slate-500 font-medium truncate">1400×350</p>
+                                <span id="monitorCount" class="text-[9px] lg:text-base font-black text-blue-600 block">0 / 2</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Tools Section -->
+            <div class="space-y-4 pt-6 border-t border-slate-200">
+                <label class="text-[10px] lg:text-sm font-bold text-slate-500 uppercase tracking-wider block">レイアウトツール</label>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex gap-2">
+                            <button id="measureToolBtn" class="flex-1 flex items-center justify-center gap-2 py-3 px-3 bg-white border border-slate-200 rounded-lg text-[10px] lg:text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 12h12l3-12H3z"></path></svg>
+                                計測モード
+                            </button>
+                            <button id="clearMeasureBtn" class="px-3 bg-white border border-slate-200 rounded-lg text-[10px] lg:text-xs font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                                クリア
+                            </button>
+                        </div>
+                    </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="flex-1 min-w-0 space-y-4 pt-6 border-t border-slate-200">
+                <label class="text-[10px] lg:text-sm font-bold text-slate-500 uppercase tracking-wider block">配置済み備品リスト</label>
+                <div id="inventorySummary" class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <table class="w-full text-left text-[10px] lg:text-xs">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-200">
+                                <th class="pb-2 font-bold">備品名</th>
+                                <th class="pb-2 font-bold text-right">数量</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryList" class="text-slate-600">
+                            <!-- JSで動的に追加 -->
+                            <tr>
+                                <td class="py-2">なし</td>
+                                <td class="py-2 text-right">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="roomSpecificControls" class="hidden lg:block space-y-4 pt-6 border-t border-slate-200">
+                <label class="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-wider">部屋固有の設定</label>
+                <div id="swinkControls" class="hidden">
+                    <button id="toggleSwinkSeats" class="w-full py-2 lg:py-3 px-3 lg:px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg lg:rounded-xl text-[10px] lg:text-sm font-bold flex items-center justify-between transition-all">
+                        <span>移動観覧席 (展開/収納)</span>
+                        <div id="swinkSeatsStatus" class="w-8 lg:w-10 h-4 lg:h-5 bg-blue-600 rounded-full relative transition-all">
+                            <div class="dot absolute left-5 lg:left-6 top-0.5 lg:top-1 w-3 h-3 bg-white rounded-full transition-all"></div>
+                        </div>
                     </button>
                 </div>
             </div>
 
-            <!-- 右側：結果パネル -->
-            <div class="w-full lg:w-96">
-                <div class="sticky top-28 space-y-6">
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xl shadow-slate-200/40 dark:shadow-none">
-                        <div class="bg-slate-900 dark:bg-slate-800 px-6 py-5 text-white">
-                            <h3 class="font-bold flex items-center gap-2">
-                                見積結果（概算）
-                            </h3>
-                            <div class="hidden print:block text-[10px] font-normal mt-1 opacity-70">
-                                発行日: <span id="print-date"></span> | 大垣市情報工房 料金シミュレーター
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <dl class="space-y-6">
-                                <div class="flex flex-col gap-1.5 pb-4 border-b border-slate-100 dark:border-slate-800">
-                                    <dt class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">選択中の施設</dt>
-                                    <dd class="text-base font-bold text-slate-900 dark:text-white" id="sim-room-name">未選択</dd>
-                                </div>
-                                <div id="sim-details-list" class="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide text-sm">
-                                    <!-- JSで挿入 -->
-                                </div>
-                                <div class="pt-6 border-t-2 border-dashed border-slate-100 dark:border-slate-800 flex flex-col items-end gap-1">
-                                    <span class="text-xs font-bold text-slate-500 text-right">合計金額 (税込)</span>
-                                    <span class="text-3xl font-black text-primary tracking-tight" id="sim-total-price">¥0</span>
-                                </div>
-                            </dl>
-                            
-                            <div class="mt-8 grid grid-cols-2 gap-3 no-print">
-                                <button id="copy-estimate-btn" class="flex items-center justify-center gap-2 rounded-2xl bg-slate-100 dark:bg-slate-800 py-4 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-all active:scale-[0.98]">
-                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    結果をコピー
-                                </button>
-                                <button id="print-estimate-btn" class="flex items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-bold text-white hover:bg-primary-700 transition-all shadow-lg shadow-primary/20 active:scale-[0.98]">
-                                    <svg class="size-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                        <path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                    </svg>
-                                    見積書を印刷
-                                </button>
-                            </div>
-                            
-                            <div class="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-slate-500">
-                                <div class="text-[10px] sm:text-[11px] font-bold space-y-2 leading-relaxed">
-                                    <p class="border-b border-slate-200 dark:border-slate-700 pb-1 mb-2 text-slate-900 dark:text-white">【見積明細に関する通知・免責事項】</p>
-                                    <ul class="list-disc pl-4 space-y-1 font-medium">
-                                        <li>本状の合計金額は入力情報に基づく概算見積であり、実際の請求額は窓口での正式申請時に「大垣市情報工房条例」に基づき確定いたします。</li>
-                                        <li>催事の内容や入場料の設定状況により、別途加算料金が発生する、または減免が適用される場合があります。</li>
-                                        <li>本ツールは正確を期して作成しておりますが、算出結果の完全性を保証するものではありません。</li>
-                                        <li>本ツールおよび見積書の利用により発生したいかなる損害についても、当施設は一切の責任を負いかねます。</li>
-                                    </ul>
-                                </div>
-                            </div>
+            <!-- Help Guide (Full Steps) -->
+            <div class="hidden lg:block shrink-0 bg-slate-900 rounded-[2rem] p-8 shadow-2xl relative border border-white/20 mt-10">
+                <h3 class="text-lg font-black text-white mb-6 border-b border-white/20 pb-4">操作ガイド</h3>
+                <div class="space-y-6">
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">1</div>
+                        <div class="flex flex-col">
+                            <span class="text-base font-bold text-white">移動</span>
+                            <span class="text-sm text-slate-400">ドラッグして移動</span>
                         </div>
                     </div>
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">2</div>
+                        <div class="flex flex-col">
+                            <span class="text-base font-bold text-white">90度回転</span>
+                            <span class="text-sm text-slate-400">右下の青ボタンをクリック</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">3</div>
+                        <div class="flex flex-col">
+                            <span class="text-base font-bold text-white">自由回転</span>
+                            <span class="text-sm text-slate-400">上部のツマミをドラッグ</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 w-7 h-7 bg-red-600 rounded-full flex items-center justify-center text-white text-xs font-bold">4</div>
+                        <div class="flex flex-col">
+                            <span class="text-base font-bold text-white">削除</span>
+                            <span class="text-sm text-slate-400">選択して <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-white/10 text-[10px]">DEL</kbd> キー</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="shrink-0 w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">5</div>
+                        <div class="flex flex-col">
+                            <span class="text-base font-bold text-white">スナップ機能</span>
+                            <span class="text-sm text-slate-400">ONで10cm(0.1m)単位でピタッと整列</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spacer -->
+            <div class="h-10 w-full shrink-0"></div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <div class="flex-1 p-4 lg:p-8 flex flex-col items-center justify-start overflow-auto relative" id="canvasContainer">
+            <!-- Canvas wrapper -->
+            <div class="canvas-wrapper relative">
+                <div id="canvasScaleInner" class="relative">
+                    <canvas id="layoutCanvas"></canvas>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- モバイル用合計バー -->
-    <div id="mobile-total-bar" class="lg:hidden fixed bottom-6 left-4 right-4 z-50 translate-y-24 transition-transform duration-300">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between overflow-hidden relative">
-            <div class="relative z-10">
-                <span class="text-[10px] font-bold text-slate-400 block mb-0.5">見積合計（税込）</span>
-                <span class="text-2xl font-black text-primary" id="mobile-total-price">¥0</span>
-            </div>
-            <button id="mobile-scroll-to-result" class="relative z-10 bg-primary text-white px-5 py-3 rounded-xl font-bold text-sm shadow-lg shadow-primary/20">
-                明細を確認
-            </button>
+    <!-- Footer (Disclaimer) -->
+    <footer class="bg-slate-900 text-slate-400 py-2 px-4 lg:px-8 text-[10px] lg:text-xs flex flex-col sm:flex-row justify-between items-center z-50 relative shrink-0">
+        <p>⚠️ 【免責事項】本シミュレーターで作成されたレイアウト・寸法は目安であり、実際の配置を完全に保証するものではありません。</p>
+        <div class="flex gap-4 mt-1 sm:mt-0">
+            <a href="terms.html" target="_blank" class="hover:text-white transition-colors underline underline-offset-2">利用規約</a>
+            <a href="privacy.html" target="_blank" class="hover:text-white transition-colors underline underline-offset-2">プライバシーポリシー</a>
         </div>
-    </div>
+    </footer>
 
-    <script src="app.js?v=4.0"></script>
+    <script src="app.js?v=3000"></script>
 </body>
-
 </html>

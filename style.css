@@ -1,0 +1,191 @@
+:root {
+    --primary: #2563eb;      /* Blue 600 */
+    --primary-hover: #1d4ed8; /* Blue 700 */
+    --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.08);
+    --shadow-glow: 0 20px 40px -10px rgba(37, 99, 235, 0.15);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-gradient);
+    color: var(--text-main);
+    background-attachment: fixed;
+}
+
+/* Glassmorphism Components */
+header {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+}
+
+aside {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.02);
+}
+
+/* Form Elements */
+select {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    color: var(--text-main) !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+    transition: all 0.3s ease;
+}
+
+select:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+/* Furniture Buttons (Cards) */
+.furniture-btn-compact {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.furniture-btn-compact:hover {
+    border-color: var(--primary);
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.1);
+}
+
+/* Canvas Area */
+#canvasContainer {
+    background: transparent;
+    background-image: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.03) 0%, transparent 60%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.canvas-wrapper {
+    position: relative;
+    overflow: visible;
+    margin: 0 auto;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+#canvasScaleInner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.2s ease-out;
+    transform-origin: top center;
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Badges & Accents */
+.badge-new {
+    background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
+    color: white;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3);
+}
+
+/* Primary Export Button Override */
+#exportBtn {
+    background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    border: none;
+}
+#exportBtn:hover {
+    background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Toggle Switches */
+.peer-checked\:bg-blue-600:checked ~ .peer {
+    background-color: var(--primary) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(148, 163, 184, 0.05);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.6);
+    background-clip: content-box;
+}
+@media (max-width: 1024px) {
+    /* タッチ操作向上のための最小高さ確保 */
+    button, input, select {
+        touch-action: manipulation;
+    }
+}
+
+/* Multi-select active mode style */
+.active-multi-select {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #1d4ed8 !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* Undo button disabled style */
+#undoBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* スマホ (iPhone) 画面の表示最適化 */
+@media (max-width: 640px) {
+    header {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    #canvasContainer {
+        padding: 0.5rem;
+        overflow-x: auto;
+    }
+
+    .canvas-wrapper {
+        max-width: 100%;
+    }
+
+    /* 備品リストカードのテキスト折返し禁止とパディング縮小 */
+    .furniture-btn {
+        padding: 0.35rem !important;
+    }
+
+    /* スクロールバーの非表示 */
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
